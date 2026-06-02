@@ -1,1 +1,23 @@
+Vulnerability: IDOR
+Target: API Endpoint (/api/user/)
+Impact: Unauthenticated users can delete any arbitrary account on the platform.
 
+Description:
+The application exposes its API documentation at /api/. By analyzing the documentation, it was discovered that the /api/user/[username] endpoint accepts DELETE requests.
+The endpoint relies on the session cookie for authentication but fails to implement proper authorization checks, allowing an attacker with any valid session to delete other users accounts.
+
+Steps to Reproduce (PoC):
+
+1 - Map API Endpoints: Intercept the application's normal traffic using Burp Suite to identify API interactions.
+
+2- Discover API Documentation: Send a GET request to /api (which returns a 302 Found), and then to /api/ (which returns a 200 OK containing the full API documentation).
+
+3- Identify the Target Route: Review the documentation to find that the API accepts DELETE requests at the /api/user/[username] endpoint.
+
+4 - Attempt Direct Access (Failed): Send a direct DELETE /api/user/carlos HTTP/2 request without session cookies. Observe the 401 Unauthorized response, indicating that a valid session is required.
+
+5 - Capture a Valid Session: Log into your own account (e.g., wiener) and perform a profile update (like changing the email). Intercept this request in Burp Suite to capture the PATCH /api/user/wiener HTTP/2 request, which includes your valid session cookie.
+
+6 - Exploit the Vulnerability: Send the intercepted request to Burp Repeater. Change the HTTP method from PATCH to DELETE and modify the target path from your username to the victim's username (/api/user/carlos).
+
+7 - Confirm Execution: Send the modified request. The server returns an HTTP/2 200 OK with the body {"status":"User deleted"}, successfully bypassing authorization and deleting the target account.
