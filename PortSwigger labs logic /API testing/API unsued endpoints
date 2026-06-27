@@ -1,0 +1,29 @@
+Vulnerability: IDOR (Insecure Direct Object Reference)
+
+Target: API Endpoint (/api/products/{productId}/price)
+
+Impact: Unauthorized users can manipulate product pricing, leading to significant financial loss and potential business logic bypass (e.g., purchasing high-value items for free).
+
+Description: The application utilizes an undocumented API endpoint to manage product pricing dynamically via the frontend. By analyzing the source code (/resources/js/api/productPrice.js), an API endpoint was identified at /api/products/{productId}/price. While intended for read-only purposes via GET requests, the endpoint incorrectly handles PATCH requests. Due to the lack of proper server-side authorization and input validation, an attacker can modify the price of any product in the store by sending a crafted JSON payload.
+
+Steps to Reproduce (PoC):
+
+1 - Map API Endpoints: Navigate through the product pages and use Burp Suite to intercept HTTP traffic. Observe the background requests being made to the API.
+
+2 - Discover Hidden Endpoint: Identify the GET /api/products/1/price request in the HTTP history, which confirms the pattern of the product pricing API.
+
+3 - Identify Supported Methods: Send the request to Burp Repeater. Attempt to use the OPTIONS or PATCH methods to test if the API accepts modification requests.
+
+4 - Trigger the Vulnerability: Construct a PATCH request targeting the product ID (/api/products/1/price). Add the header Content-Type: application/json and forge a JSON body containing the desired target price.
+
+PATCH /api/products/1/price HTTP/2
+Host: [YOUR_LAB_ID].web-security-academy.net
+Content-Type: application/json
+
+{
+    "price": 0
+}
+
+5 - Confirm Execution: Send the request. The server returns an HTTP/2 200 OK, confirming that the resource was successfully modified.
+
+6 - Verify the Exploit: Return to the web interface and refresh the product page or cart. The item price will be displayed as $0.00, allowing for a successful checkout and resolution of the lab.
