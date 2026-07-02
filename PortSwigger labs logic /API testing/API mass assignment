@@ -1,0 +1,29 @@
+Vulnerability: Business Logic Flaw / Mass Assignment
+
+Target: API Endpoint (/api/checkout)
+
+Impact: Unauthenticated or unauthorized users can manipulate internal checkout parameters, allowing them to apply arbitrary discounts and purchase items for free, leading to direct financial loss for the business.
+
+Description:
+The application processes purchases via the /api/checkout endpoint. By sending a GET request to this route, the API leaks its expected data structure, revealing internal JSON parameters such as item_price and discount. Although the application correctly blocks PATCH requests (405 Method Not Allowed) and prevents direct manipulation of the item_price during a POST request, it fails to sanitize or restrict the discount field. An attacker can exploit this mass assignment vulnerability by forging a POST request with a manipulated discount value, bypassing the intended purchasing logic and the "insufficient funds" restriction.
+
+Steps to Reproduce (PoC):
+
+1 - Reconnaissance: Browse the web application, add the target item to the cart, and attempt to check out. The application blocks the purchase with an "insufficient funds" error message.
+
+2 - Traffic Analysis: Inspect the HTTP history in Burp Suite and identify the API call responsible for the checkout process: GET /api/checkout.
+
+3 - Information Disclosure: Send the GET /api/checkout request to Burp Repeater. Review the server's response, which returns a JSON object exposing internal parameters: "item_price" and "discount".
+
+4 - Method Enumeration: Attempt to modify the parameters using the PATCH method. The server rejects it with a HTTP 405 Method Not Allowed, indicating that PATCH is not supported for this route.
+
+5 - Parameter Fuzzing (Failed Attempt): Change the HTTP method to POST. Create a JSON payload attempting to set "item_price": 0. Send the request and observe that the server either ignores this field or validates it properly, as the exploit does not work.
+
+6 - Exploit the Vulnerability: Modify the POST request payload to target the secondary parameter discovered in step 3. Inject a 100% discount into the JSON body:
+
+HTTP POST
+{
+    "discount": 100
+}
+
+7 - Confirm Execution: Send the malicious request. The server accepts the payload, applies the 100% discount, and processes the order successfully, bypassing the balance check and solving the lab.
