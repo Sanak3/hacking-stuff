@@ -1,0 +1,22 @@
+Vulnerability: Authentication Bypass via SQL Injection (SQLi)
+Target: Web Application Login Form (Port 80/HTTP)
+Impact: An unauthenticated remote attacker can bypass the login mechanism and gain unauthorized access to restricted areas of the web application, potentially compromising sensitive data or administrative functions.
+
+Description:
+During the web application enumeration on port 80 (Apache), a login form was discovered on the main page. The underlying backend database query handling the authentication process does not properly sanitize user input before executing SQL statements. By injecting specific SQL syntax (such as a single quote to break the query structure and a hash symbol to comment out the remainder), an attacker can manipulate the logic of the query to evaluate to true. This effectively nullifies the password verification check and authenticates the attacker as the targeted user without requiring valid credentials.
+
+Steps to Reproduce (PoC):
+
+1 - Map Open Ports and Services: Perform an Nmap scan to identify the web service running on the target.
+nmap -sC -sV 10.129.183.221
+
+2 - Identify the Target Service: Review the Nmap output. The scan reveals an Apache httpd 2.4.38 server running on port 80/tcp.
+
+3 - Access the Web Application: Navigate to the target's IP address ([http://10.129.183.221](http://10.129.183.221)) using a web browser to find the primary login portal.
+
+4 - Inject SQL Payload: In the login form, input the following SQLi payload into the "Username" field to break the query and comment out the password evaluation:
+admin' #
+
+5 - Bypass Password Check: Enter any arbitrary string (e.g., 1234) into the "Password" field, as the SQL comment symbol (#) will cause the backend database to ignore this input entirely.
+
+6 - Execute Attack: Submit the form. The manipulated SQL query evaluates to true for the user admin, bypassing the authentication mechanism and granting access to the system where the flag is stored.
