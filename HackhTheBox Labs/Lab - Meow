@@ -1,0 +1,26 @@
+Vulnerability: Security Misconfiguration (Blank Password)
+Target: Telnet Service (Port 23)
+Impact: An unauthenticated remote attacker can gain full administrative (root) access to the server, leading to complete system compromise.
+
+Description:
+During the initial enumeration phase, it was discovered that the target machine exposes a legacy Telnet service on port 23. Telnet transmits data in plaintext, but more critically, the service on this host suffers from a severe security misconfiguration: the default highest-privileged account (root) does not have a password configured. This flaw allows any remote attacker to bypass authentication entirely and obtain a root shell on the system.
+
+Steps to Reproduce (PoC):
+
+1 - Establish Network Connectivity: Connect to the target network via OpenVPN and verify reachability by pinging the target IP.
+ping -c 4 10.129.183.2
+
+2 - Map Open Ports and Services: Perform a network scan using Nmap to identify exposed services on the target machine.
+nmap -sV -sC -p- 10.129.183.2
+
+3 - Identify the Target Service: Review the Nmap output. The scan reveals that port 23/tcp is open and running the Telnet service.
+
+4 - Attempt Direct Connection: Initiate a direct connection to the exposed Telnet service using a standard terminal client to interact with the banner.
+telnet 10.129.183.2
+
+5 - Exploit the Misconfiguration: Upon receiving the Meow login: prompt, attempt to authenticate using standard high-privileged default accounts. Input the username root and press Enter.
+
+6 - Bypass Authentication: When the system processes the user input, it does not request a password (or accepts a blank one). Press Enter to submit a null password.
+
+7 - Confirm Execution: Observe that the authentication is successful, dropping you directly into a root shell (root@meow:~#). System compromise is confirmed by listing the directory contents and capturing the flag.
+cat flag.txt
