@@ -1,0 +1,29 @@
+Vulnerability: Insecure Authentication (Unauthenticated Redis Access)
+Target: Redis In-Memory Data Store (Port 6379)
+Impact: An unauthenticated remote attacker can connect directly to the database, enumerate keys, read, modify, or delete stored data, and potentially escalate privileges to Remote Code Execution (RCE) depending on server permissions.
+
+Description:
+During the enumeration phase, a Redis key-value store was discovered running on port 6379. Redis is an in-memory database designed for rapid data retrieval, but it is frequently misconfigured by administrators who expose it to external networks without enabling the requirepass authentication directive. This fundamental misconfiguration allows any remote user to connect via the Redis Command Line Interface (redis-cli), switch between logical databases, and extract sensitive cached information in plaintext without requiring any valid credentials.
+
+Steps to Reproduce (PoC):
+
+1 - Map Open Ports and Services: Perform a targeted network scan using Nmap to confirm the service and version running on port 6379.
+nmap -p 6379 -sV -sC 10.129.183.113
+
+2 - Identify the Target Service: Review the Nmap output. The scan confirms that port 6379/tcp is open and running Redis key-value store 5.0.7.
+
+3 - Initiate Unauthorized Connection: Use the redis-cli utility to connect to the target host. The absence of authentication drops the user directly into the interactive Redis shell.
+redis-cli -h 10.129.183.113
+
+4 - Enumerate Server Statistics: Issue the info command to gather server details and locate populated databases.
+info
+(Observation: Scrolling to the "Keyspace" section reveals db0:keys=4, indicating that logical Database 0 is in use and contains 4 keys).
+
+5 - Select Target Database: Switch to the populated database index identified during enumeration.
+select 0
+
+6 - Enumerate Keys: Query the database to list all stored keys. (Note: Redis syntax requires a space between the command and the wildcard argument).
+keys *
+
+7 - Exfiltrate Data: Identify the target key (flag) from the returned list and retrieve its stored value using the get command.
+get flag
