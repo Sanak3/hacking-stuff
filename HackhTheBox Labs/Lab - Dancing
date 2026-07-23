@@ -1,0 +1,31 @@
+Vulnerability: Insecure Authentication (SMB Null Session / Anonymous Access)
+Target: SMB Service (Port 445)
+Impact: An unauthenticated remote attacker can enumerate network shares, access restricted directories, and exfiltrate sensitive files or credentials stored on the server.
+
+Description:
+During the network enumeration phase, port 445/tcp was discovered open, running the Microsoft SMB service. Further investigation revealed that the server is misconfigured to allow Null Sessions (anonymous logins). This flaw allows an attacker to bypass standard credential verification by providing a blank username and password. By exploiting this misconfiguration, an attacker can list all available shares and gain unauthorized read access to custom directories (such as WorkShares), leading to the compromise of sensitive user data.
+
+Steps to Reproduce (PoC):
+
+1 - Map Open Ports and Services: Perform a detailed network scan using Nmap to identify exposed services on the target machine.
+nmap -sC -sV -T4 10.129.1.12
+
+2 - Identify the Target Service: Review the Nmap output. The scan confirms that port 445/tcp is open and running the microsoft-ds (SMB) service on a Windows host.
+
+3 - Enumerate SMB Shares: Use smbclient with a blank user flag (-U "") to force a Null Session, bypassing authentication and listing all available shares on the target.
+smbclient -L //10.129.1.12/ -U ""
+
+4 - Identify the Vulnerable Share: Observe the output list. Alongside default administrative shares (ADMIN$, C$, IPC$), a non-standard custom share named WorkShares is exposed and accessible.
+
+5 - Initiate Unauthorized Connection: Connect directly to the vulnerable WorkShares directory using the anonymous session. Press Enter when prompted for a password.
+smbclient //10.129.1.12/WorkShares -U ""
+
+6 - Navigate the File System: Once the smb: \> prompt is granted, browse the internal directory structure to locate user folders and sensitive information.
+ls
+cd James.P
+
+7 - Exfiltrate Data: Identify the target file (flag.txt) within the user's directory and download it to the local machine using the SMB get command.
+get flag.txt
+
+8 - Verify Exfiltration: Exit the SMB session (exit or Ctrl+C) and read the contents of the downloaded file on the local host to confirm successful data extraction.
+cat flag.txt
