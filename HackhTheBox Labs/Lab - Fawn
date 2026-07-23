@@ -1,0 +1,32 @@
+Vulnerability: Insecure Authentication (Anonymous FTP Login)
+Target: FTP Service (Port 21)
+Impact: An unauthenticated remote attacker can access, browse, and potentially modify or download sensitive files stored on the file server, leading to unauthorized data disclosure.
+
+Description:
+During the enumeration phase, a File Transfer Protocol (FTP) service was discovered running on the target machine. By design, FTP transmits data in plaintext, but the critical vulnerability here lies in its configuration. The service allows "Anonymous" logins, a feature meant for public file sharing but often mistakenly left enabled on restricted servers. This misconfiguration permits any attacker to bypass standard credential checks, browse the internal directory structure, and download sensitive files without requiring a valid user account.
+
+Steps to Reproduce (PoC):
+
+1 - Establish Network Connectivity: Connect to the target network via OpenVPN and verify reachability by sending an ICMP echo request (ping) to the target IP.
+ping -c 4 10.129.183.46
+
+2 - Map Open Ports and Services: Perform a network scan using Nmap to identify exposed services on the target machine, utilizing the version detection flag (-sV) to gather detailed information.
+nmap -sV -sC -p- 10.129.183.46
+
+3 - Identify the Target Service: Review the Nmap output. The scan confirms that port 21/tcp is open and running an FTP service (vsftpd 3.0.3).
+
+4 - Initiate Connection: Use the local FTP client via terminal to initiate a connection request to the target server.
+ftp 10.129.183.46
+
+5 - Exploit the Misconfiguration: Upon receiving the prompt for a username (Name:), attempt to exploit the insecure configuration by providing the default public user. Input anonymous and press Enter.
+
+6 - Bypass Password Verification: When prompted for a password, bypass it by providing a blank string (simply press Enter) or any arbitrary text, as the service disregards the password for this specific account.
+
+7 - Confirm Execution & Enumerate: Observe the 230 Login successful message and the ftp> prompt. List the directory contents to confirm unauthorized access to the file system.
+ls
+
+8 - Exfiltrate Data: Identify the target file (flag.txt) and download it to the local machine using the FTP get command.
+get flag.txt
+
+9 - Verify Exfiltration: Exit the FTP session (exit or bye) and read the contents of the downloaded file on the local host to confirm data extraction.
+cat flag.txt
