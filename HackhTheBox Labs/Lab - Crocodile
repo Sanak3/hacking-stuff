@@ -28,3 +28,5 @@ cat allowed.userlist.passwd
 gobuster dir -u [http://10.129.](http://10.129.)x.x -w /usr/share/wordlists/dirb/common.txt -x php,html
 
 7 - Access the Admin Panel: Navigate to the discovered /login.php page via a web browser ([http://10.129.](http://10.129.)x.x/login.php).
+
+8 - Execute Account Takeover: Authenticate on the web panel using the highest privileged username and password combination extracted from the FTP server. Successful login grants full access to the Server Manager dashboard, where the final flag is displayed.
