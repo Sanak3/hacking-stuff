@@ -1,0 +1,30 @@
+Vulnerability: Authentication Bypass via Information Disclosure (Anonymous FTP Access)
+Target: FTP Service (Port 21) and HTTP Service (Port 80)
+Impact: An unauthenticated remote attacker can extract valid administrative credentials from an insecurely configured FTP server. These credentials can then be used to gain unauthorized administrative access to a hidden web management panel, leading to full compromise of the web application.
+
+Description:
+During the network enumeration phase, two critical services were discovered: FTP (port 21) and an Apache HTTP server (port 80). The FTP server was misconfigured to allow anonymous logins, inadvertently exposing leftover deployment files containing valid usernames and passwords. Concurrently, directory fuzzing on the web server revealed a hidden administrative login interface (/login.php). By chaining these two discoveries—exploiting the information disclosure on the FTP service to authenticate on the exposed web panel—an attacker can successfully compromise the target's Server Manager dashboard.
+
+Steps to Reproduce (PoC):
+
+1 - Map Open Ports and Services: Perform a script and version detection scan using Nmap to identify exposed services and their configurations on the target machine.
+nmap -sC -sV 10.129.x.x
+
+2 - Identify the Vulnerable Services: Review the Nmap output. The scan confirms that port 80/tcp is running Apache httpd, and port 21/tcp is running an FTP service that explicitly allows Anonymous login.
+
+3 - Exploit Anonymous FTP Access: Connect directly to the target's FTP server. Use anonymous as the username and leave the password blank to successfully authenticate without valid credentials.
+ftp 10.129.x.x
+
+4 - Enumerate and Exfiltrate Files: Once inside the FTP shell, list the contents of the current directory. Identify and download the exposed configuration files containing sensitive data to the local attacking machine.
+ls
+get allowed.userlist
+get allowed.userlist.passwd
+
+5 - Analyze the Extracted Data: Close the FTP connection (exit) and read the contents of the downloaded files locally to extract the leaked username and password combinations.
+cat allowed.userlist
+cat allowed.userlist.passwd
+
+6 - Enumerate Web Directories: Utilize Gobuster to perform directory and file fuzzing against the HTTP service. Use the -x flag to specifically hunt for .php and .html extensions, uncovering hidden endpoints.
+gobuster dir -u [http://10.129.](http://10.129.)x.x -w /usr/share/wordlists/dirb/common.txt -x php,html
+
+7 - Access the Admin Panel: Navigate to the discovered /login.php page via a web browser ([http://10.129.](http://10.129.)x.x/login.php).
