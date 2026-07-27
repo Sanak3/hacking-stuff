@@ -1,0 +1,28 @@
+Vulnerability: Insecure Authentication (Passwordless Root Access)
+Target: MySQL/MariaDB Service (Port 3306)
+Impact: An unauthenticated remote attacker can bypass authentication to access the database as the highest privileged user (root), allowing them to view, modify, or extract critical stored data such as private user information, passwords, and system configurations.
+
+Description:
+During the network enumeration phase, port 3306/tcp was discovered open, running the MariaDB service. Further investigation revealed that the service was left with a misconfiguration — likely from the deployment stage to allow personnel easy access — which permits passwordless authentication for the root user. This flaw allows an attacker to bypass standard credential verification entirely. By exploiting this misconfiguration, an attacker can directly interact with the SQL service via a terminal client, navigate through internal databases, and extract sensitive information from restricted tables (such as the htb database).
+
+Steps to Reproduce (PoC):
+
+1 - Map Open Ports and Services: Perform a script and version detection scan using Nmap to identify exposed services on the target network.
+nmap -sC -sV 10.129.186.86
+
+2 - Identify the Target Service: Review the Nmap output. The scan confirms that port 3306/tcp is open and running the MySQL 5.5.5-10.3.27-MariaDB service.
+
+3 - Initiate Unauthorized Connection: Connect directly to the database using the MySQL command-line client. Specify the root user and leave the password blank to exploit the passwordless authentication misconfiguration (Note: --skip-ssl is used to maintain compatibility between modern clients and the legacy server).
+mysql -h 10.129.186.86 -u root --skip-ssl
+
+4 - Enumerate Databases: Once placed in the MySQL service shell (MariaDB [(none)]>), print out the accessible databases to identify custom data storage.
+SHOW databases;
+
+5 - Select the Target Database: Identify the non-standard database named htb from the output list and set it as the active database for subsequent queries.
+USE htb;
+
+6 - Enumerate Tables: Print out the available tables inside the active htb database to locate sensitive entries, discovering the config and users tables.
+SHOW tables;
+
+7 - Exfiltrate Data: Query the target config table to print out all its data, successfully retrieving the hidden entries and the final flag.
+SELECT * FROM config;
